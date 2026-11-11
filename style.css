@@ -1,0 +1,32 @@
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #090a10;
+}
+
+body {
+  display: grid;
+  place-items: center;
+}
+
+canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+#load-error {
+  position: fixed;
+  inset: 1rem 1rem auto;
+  z-index: 1;
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border: 1px solid #e23414;
+  border-radius: 0.4rem;
+  background: #1c1c26;
+  color: #f4f1ec;
+  font: 14px/1.5 monospace;
+}
