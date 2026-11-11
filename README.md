@@ -1,15 +1,37 @@
-# AVI.
-Avi web interactiva 
- =========================================================
+ /*=========================================================
    AVI A.M — "hace más frío"
    Web interactiva en p5.js
    Flujo: puertas -> pasillo (4 pósters) -> show (4 canciones)
           -> confeti -> luces apagadas -> boleto "volver a vivir"
    ========================================================= */
 
-/* ---------- 1. CONTENIDO (edita aquí) ---------- */
-
 const CONFIG = {
+  baseUrl: "./",
+
+  images: {
+    "azul": "assets/img/azul.png",
+    "hace-mas-frio": "assets/img/hace-mas-frio.png",
+    "vox-2007": "assets/img/vox-2007.png",
+    "dos-almas": "assets/img/dos-almas.png"
+  },
+
+  aviFrames: {
+    folder: "assets/img/frames/",
+    count: 46,
+    ext: ".png"
+  },
+
+  // ---- ANIMACIÓN DE AVI en la pantalla de inicio del show ----
+  // Cuadros f0.jpg, f1.jpg... en esa carpeta. Si no los subes, pon count: 0 y saldrá el nombre "AVI A.M".
+  aviFrames: { folder: "assets/img/frames/", count: 46, ext: ".jpg" },
+
+  // ---- COLORES DE LOS PÓSTERS [R, G, B] ----
+  theme: {
+    paper:  [250, 248, 242],   // fondo del póster y de la tarjeta de lectura
+    ink:    [28, 28, 38],      // color del texto
+    accent: [226, 52, 20]      // detalles (línea, check, botón)
+  },
+
   // Si no quieres usar la canción completa, pon cuántos segundos suenan.
   // null = la canción entera.
   clipSeconds: 60,
@@ -56,7 +78,8 @@ const SANS = "Helvetica, Arial, sans-serif";
 
 let S = 1, OX = 0, OY = 0;           // escala y desplazamiento del lienzo lógico
 let imgs = {}, aviFrames = [];
-const N_AVI = 46;
+const N_AVI = CONFIG.aviFrames.count;
+const T = CONFIG.theme;
 let scene = "doors";                  // doors | hall | show | finale
 let sceneT0 = 0;
 let mx = 0, my = 0;                   // mouse en coordenadas lógicas
@@ -164,7 +187,7 @@ function playSong(i) {
   songEnded = false; songStart = millis();
   const s = CONFIG.songs[i];
   if (!s.el) {
-    s.el = new Audio(s.audio);
+    s.el = new Audio((CONFIG.baseUrl || "") + s.audio);
     s.el.preload = "auto";
     s.el.addEventListener("error", () => { s.missing = true; });
   }
@@ -179,12 +202,12 @@ function playSong(i) {
 function songProgress() {
   if (songIdx < 0) return 0;
   const s = CONFIG.songs[songIdx];
-  const clip = CONFIG.clipSeconds;
+  const clipSec = CONFIG.clipSeconds;
   let cur, total;
   if (s.el && !s.missing && s.el.duration && isFinite(s.el.duration)) {
-    cur = s.el.currentTime; total = clip ? Math.min(clip, s.el.duration) : s.el.duration;
+    cur = s.el.currentTime; total = clipSec ? Math.min(clipSec, s.el.duration) : s.el.duration;
   } else {
-    cur = (millis() - songStart) / 1000; total = clip || 60;       // sin audio: reloj simulado
+    cur = (millis() - songStart) / 1000; total = clipSec || 60;       // sin audio: reloj simulado
   }
   return { cur, total, p: Math.min(1, cur / total) };
 }
@@ -192,14 +215,30 @@ function songProgress() {
 /* ---------- 4. p5: PRELOAD / SETUP ---------- */
 
 let loadedN = 0, failedN = 0;
-function loadImg(src) {
-  return loadImage(src, () => { loadedN++; }, () => { loadedN++; failedN++; });
+// Carga de imágenes con el objeto Image nativo: funciona igual en p5.js 1.x y 2.x
+class Pic {
+  constructor(src) {
+    this.ok = false;
+    this.el = new Image();
+    this.el.onload = () => { this.ok = true; loadedN++; };
+    this.el.onerror = () => { loadedN++; failedN++; };
+    this.el.src = src;
+  }
+  get width() { return this.el.naturalWidth || 1; }
+  get height() { return this.el.naturalHeight || 1; }
+}
+function drawImg(pic, x, y, w, h, sx, sy, sw, sh) {
+  if (!pic || !pic.ok) return;
+  if (sx === undefined) drawingContext.drawImage(pic.el, x, y, w, h);
+  else drawingContext.drawImage(pic.el, sx, sy, sw, sh, x, y, w, h);
 }
 function loadAssets() {
-  // Si existe ASSETS (versión de un solo archivo) se usa; si no, se leen las carpetas assets/
+  // Si existe ASSETS (versión de un solo archivo) se usa; si no, se leen los archivos de CONFIG
   const hasA = (typeof ASSETS !== "undefined");
-  ["azul", "hace-mas-frio", "vox-2007", "dos-almas"].forEach(n => { imgs[n] = loadImg(hasA ? ASSETS[n] : "assets/img/" + n + ".jpg"); });
-  for (let i = 0; i < N_AVI; i++) aviFrames.push(loadImg(hasA ? ASSETS["f" + i] : "assets/img/frames/f" + i + ".jpg"));
+  const base = CONFIG.baseUrl || "";
+  Object.keys(CONFIG.images).forEach(n => { imgs[n] = new Pic(hasA ? ASSETS[n] : base + CONFIG.images[n]); });
+  const af = CONFIG.aviFrames;
+  for (let i = 0; i < N_AVI; i++) aviFrames.push(new Pic(hasA ? ASSETS["f" + i] : base + af.folder + "f" + i + af.ext));
 }
 
 function setup() {
@@ -287,7 +326,7 @@ function coverImage(img, x, y, w, h) {
   let sw, sh, sx, sy;
   if (ir > r) { sh = img.height; sw = sh * r; sx = (img.width - sw) / 2; sy = 0; }
   else { sw = img.width; sh = sw / r; sx = 0; sy = (img.height - sh) / 2; }
-  image(img, x, y, w, h, sx, sy, sw, sh);
+  drawImg(img, x, y, w, h, sx, sy, sw, sh);
 }
 function setF(font, size, style) { textFont(font); textSize(size); textStyle(style === "bold" ? BOLD : NORMAL); }
 function txt(str, x, y, font, size, col, al, style, a) {
@@ -331,8 +370,8 @@ function drawDoors() {
   // letrero
   const aOp = doorsOpening ? Math.max(0, 1 - o * 1.2) : 1;
   txt("AVI A.M", LW / 2, 76, GOTHIC, 66, [230, 240, 255], CENTER, "", 255 * aOp);
-  if (!doorsOpening && loadedN < 4 + N_AVI) {
-    txt("cargando… " + loadedN + "/" + (4 + N_AVI), LW / 2, 664, MONO, 16, CREAM, CENTER, "", 150);
+  if (!doorsOpening && loadedN < Object.keys(CONFIG.images).length + N_AVI) {
+    txt("cargando… " + loadedN + "/" + (Object.keys(CONFIG.images).length + N_AVI), LW / 2, 664, MONO, 16, CREAM, CENTER, "", 150);
   } else if (!doorsOpening) {
     const blink = 140 + 115 * sin(t * 3);
     txt("TOCA PARA ABRIR", LW / 2, 664, MONO, 20, CREAM, CENTER, "bold", blink);
@@ -378,7 +417,7 @@ function drawHall() {
     drawingContext.restore();
     noStroke(); fill(200, 215, 255, 14 * flick); triangle(x - 25, 10, x + 25, 10, x + 190, 520); triangle(x - 25, 10, x + 25, 10, x - 190, 520);
   }
-  // letrero neón al inicio
+  // letrero neón al inicio//
   const nf = 0.75 + 0.25 * sin(t * 5) * (sin(t * 0.7) > 0.8 ? 1 : 0.2);
   glow(330, 230, 240, RED, 0.35 * nf);
   txt("AVI A.M", 330, 250, GOTHIC, 84, [255, 200, 190], CENTER, "", 255 * nf);
@@ -396,14 +435,14 @@ function drawHall() {
     // sombra y marco
     noStroke(); fill(0, 0, 0, 90); rect(-w / 2 + 10, -h / 2 + 14, w, h);
     if (hov) glow(0, 0, 330, [150, 180, 255], 0.35);
-    fill(250, 248, 242); rect(-w / 2, -h / 2, w, h);
+    fill(T.paper[0], T.paper[1], T.paper[2]); rect(-w / 2, -h / 2, w, h);
     coverImage(imgs[p.img], -w / 2 + 14, -h / 2 + 14, w - 28, 240);
     // título
-    noStroke(); fill(INK[0], INK[1], INK[2]);
+    noStroke(); fill(T.ink[0], T.ink[1], T.ink[2]);
     setF(SANS, 24, "bold"); textAlign(CENTER, TOP);
     text(p.title, -w / 2 + 14, h / 2 - 118, w - 28, 80);
     // marca de visto
-    if (visited.has(i)) { fill(RED[0], RED[1], RED[2]); circle(w / 2 - 28, -h / 2 + 28, 26); fill(255); setF(SANS, 18, "bold"); textAlign(CENTER, CENTER); text("✓", w / 2 - 28, -h / 2 + 29); }
+    if (visited.has(i)) { fill(T.accent[0], T.accent[1], T.accent[2]); circle(w / 2 - 28, -h / 2 + 28, 26); fill(255); setF(SANS, 18, "bold"); textAlign(CENTER, CENTER); text("✓", w / 2 - 28, -h / 2 + 29); }
     setF(MONO, 12); textAlign(CENTER, BASELINE); fill(110, 110, 125);
     text(visited.has(i) ? "leído" : "toca para leer", 0, h / 2 - 16);
     pop();
@@ -445,15 +484,15 @@ function drawPosterCard(i) {
   const p = CONFIG.posters[i];
   noStroke(); fill(0, 0, 0, 170); rect(0, 0, LW, LH);
   const x = 200, y = 90, w = 880, h = 540;
-  fill(250, 248, 242); rect(x, y, w, h, 6);
+  fill(T.paper[0], T.paper[1], T.paper[2]); rect(x, y, w, h, 6);
   coverImage(imgs[p.img], x + 30, y + 30, 330, 480);
-  txt(p.title, x + 400, y + 90, GOTHIC, 46, INK, LEFT, "", 255);
-  stroke(RED[0], RED[1], RED[2]); strokeWeight(3); line(x + 400, y + 112, x + 520, y + 112);
-  noStroke(); fill(INK[0], INK[1], INK[2]);
+  txt(p.title, x + 400, y + 90, GOTHIC, 46, T.ink, LEFT, "", 255);
+  stroke(T.accent[0], T.accent[1], T.accent[2]); strokeWeight(3); line(x + 400, y + 112, x + 520, y + 112);
+  noStroke(); fill(T.ink[0], T.ink[1], T.ink[2]);
   setF(SANS, 20); textAlign(LEFT, TOP); textLeading(30);
   text(p.body, x + 400, y + 140, w - 440, h - 200);
   const bx = x + w - 150, by = y + h - 60, over = inRect(bx, by, 120, 40);
-  fill(over ? RED[0] : INK[0], over ? RED[1] : INK[1], over ? RED[2] : INK[2]); rect(bx, by, 120, 40, 20);
+  fill(over ? T.accent[0] : T.ink[0], over ? T.accent[1] : T.ink[1], over ? T.accent[2] : T.ink[2]); rect(bx, by, 120, 40, 20);
   txt("cerrar", bx + 60, by + 26, MONO, 16, CREAM, CENTER, "bold", 255);
   return over;
 }
@@ -500,10 +539,15 @@ function drawShow() {
   if (songIdx < 0) {
     fill(0); rect(sx, sy, sw, sh);
     const gh = sw * 9 / 16;
-    image(aviFrames[Math.floor(millis() / 83) % aviFrames.length], sx, sy + (sh - gh) / 2, sw, gh);
+    const fr = N_AVI ? aviFrames[Math.floor(millis() / 83) % N_AVI] : null;
+    if (fr && fr.ok) drawImg(fr, sx, sy + (sh - gh) / 2, sw, gh);
+    else {   // respaldo si no hay cuadros de animación
+      glow(sx + sw / 2, sy + sh / 2, 260, [150, 180, 255], 0.35 + 0.1 * sin(t * 2));
+      txt("AVI A.M", sx + sw / 2, sy + sh / 2 + 30, GOTHIC, 96, [230, 240, 255], CENTER, "", 255);
+    }
   } else {
     const s = CONFIG.songs[songIdx];
-    image(imgs[s.img], sx, sy, sw, sh);
+    drawImg(imgs[s.img], sx, sy, sw, sh);
     // barra inferior de la pantalla
     fill(0, 0, 0, 130); rect(sx, sy + sh - 74, sw, 74);
     txt(s.name, sx + 26, sy + sh - 28, GOTHIC, 48, [255, 255, 255], LEFT, "", 255);
@@ -658,7 +702,7 @@ function drawShowBackdrop(t) {
   drawingContext.restore();
   noStroke(); fill(34, 34, 48); rect(60, 22, LW - 120, 16, 3);
   const s = CONFIG.songs[CONFIG.songs.length - 1];
-  fill(0); rect(308, 66, 664, 504, 8); image(imgs[s.img], 320, 78, 640, 480);
+  fill(0); rect(308, 66, 664, 504, 8); drawImg(imgs[s.img], 320, 78, 640, 480);
   vGrad(0, 580, LW, 140, [24, 24, 36], [6, 6, 10]);
   for (const c of crowd) {
     const b = sin(t * 9 + c.ph) * 9;
