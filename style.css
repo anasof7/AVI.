@@ -14,8 +14,8 @@ body {
 
 canvas {
   display: block;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
 }
 
 #load-error {
@@ -29,4 +29,22 @@ canvas {
   background: #1c1c26;
   color: #f4f1ec;
   font: 14px/1.5 monospace;
+}
+@font-face {
+  font-family: "Ledlight";
+  src: url("./assets/fonts/LEDLIGHT.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Calculator";
+  src: url("./assets/fonts/Calculator.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Olney Light";
+  src: url("./assets/fonts/olney_light.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
 }
