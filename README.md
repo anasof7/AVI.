@@ -1,28 +1,18 @@
-/* =========================================================
-   AVI A.M — "hace más frío"
-   Web interactiva en p5.js
-   Flujo: puertas -> pasillo (4 pósters) -> show (4 canciones)
-          -> confeti -> luces apagadas -> boleto "volver a vivir"
-   ========================================================= */
 
-/* ---------- 1. CONTENIDO (edita aquí) ---------- */
+ 
 
-const CONFIG = {
-  // Si tus archivos están en GitHub Pages y pruebas desde otro sitio (por ejemplo el editor de p5),
-  // pon aquí la dirección, por ejemplo: "https://TU-USUARIO.github.io/avi-web/". Si no, déjalo vacío.
-  baseUrl: "",
 
-  // ---- IMÁGENES: a la izquierda el nombre interno (no se toca), a la derecha la ruta de TU archivo ----
+
   images: {
-    "azul":          "assets/img/azul.jpg",
-    "hace-mas-frio": "assets/img/hace-mas-frio.jpg",
-    "vox-2007":      "assets/img/vox-2007.jpg",
-    "dos-almas":     "assets/img/dos-almas.jpg"
-  },
+  "azul": "assets/Azul.png",
+  "hace-mas-frio": "assets/Hacemasfrio.png",
+  "vox-2007": "assets/Vox-2007.png",
+  "dos-almas": "assets/Dos-almas.png"
+},
 
   // ---- ANIMACIÓN DE AVI en la pantalla de inicio del show ----
   // Cuadros f0.jpg, f1.jpg... en esa carpeta. Si no los subes, pon count: 0 y saldrá el nombre "AVI A.M".
-  aviFrames: { folder: "assets/img/frames/", count: 46, ext: ".jpg" },
+  aviFrames: { folder: "assets/frames/", count: 0, ext: ".png" },
 
   // ---- COLORES DE LOS PÓSTERS [R, G, B] ----
   theme: {
@@ -35,23 +25,14 @@ const CONFIG = {
   // null = la canción entera.
   clipSeconds: 60,
 
-  posters: [
-    { title: "¿Quién es Avi?",
-      img: "azul",
-      body: "Avi A.M es un artista que se presenta con una frase sencilla: “hago canciones :)”. " +
-            "Tiene 101 oyentes mensuales y varios lanzamientos entre 2025 y 2026: " +
-            "dos almas, vox 2007, hace más frío y azul.\n\n" +
-            "[EDITA: agrega aquí su historia]" },
-    { title: "¿De dónde sale?",
-      img: "dos-almas",
-      body: "[EDITA: escribe de dónde es Avi y dónde empezó a hacer música.]" },
-    { title: "¿Qué música hace?",
-      img: "vox-2007",
-      body: "[EDITA: describe su género y cómo suenan sus canciones.]" },
-    { title: "¿Qué quiere transmitir?",
-      img: "hace-mas-frio",
-      body: "[EDITA: escribe qué quiere comunicar: sus temas, emociones, el frío, el azul.]" }
-  ],
+  {
+  title: "¿Quién es Avi?",
+  img: "primer-poster",
+  body: "Avi A.M es un artista que se presenta con una frase sencilla: “hago canciones :)”. " +
+        "Tiene 101 oyentes mensuales y varios lanzamientos entre 2025 y 2026: " +
+        "dos almas, vox 2007, hace más frío y azul.\n\n" +
+        "[EDITA: agrega aquí su historia]"
+},
 
   // Orden del show (como en la página de Spotify: de la más nueva a la más vieja).
   // Pon tus archivos de audio en assets/audio/ con estos nombres.
@@ -435,7 +416,7 @@ function drawHall() {
     noStroke(); fill(0, 0, 0, 90); rect(-w / 2 + 10, -h / 2 + 14, w, h);
     if (hov) glow(0, 0, 330, [150, 180, 255], 0.35);
     fill(T.paper[0], T.paper[1], T.paper[2]); rect(-w / 2, -h / 2, w, h);
-    coverImage(imgs[p.img], -w / 2 + 14, -h / 2 + 14, w - 28, 240);
+    
     // título
     noStroke(); fill(T.ink[0], T.ink[1], T.ink[2]);
     setF(SANS, 24, "bold"); textAlign(CENTER, TOP);
@@ -484,7 +465,7 @@ function drawPosterCard(i) {
   noStroke(); fill(0, 0, 0, 170); rect(0, 0, LW, LH);
   const x = 200, y = 90, w = 880, h = 540;
   fill(T.paper[0], T.paper[1], T.paper[2]); rect(x, y, w, h, 6);
-  coverImage(imgs[p.img], x + 30, y + 30, 330, 480);
+  
   txt(p.title, x + 400, y + 90, GOTHIC, 46, T.ink, LEFT, "", 255);
   stroke(T.accent[0], T.accent[1], T.accent[2]); strokeWeight(3); line(x + 400, y + 112, x + 520, y + 112);
   noStroke(); fill(T.ink[0], T.ink[1], T.ink[2]);
@@ -787,7 +768,8 @@ function mouseReleased() {
     return false;
   }
   for (let i = 0; i < 4; i++) {
-    if (inRect(POSTER_X[i] - camX, 105, 290, 390)) { openPoster = i; visited.add(i); return false; }
+   if (inRect(POSTER_X[i] - camX, 105, 290, 390)) {
+  console.log("Póster seleccionado:", i);{ openPoster = i; visited.add(i); return false; }
   }
   if (visited.size >= 4 && inRect(DOOR_X - camX, 130, 230, 370)) fadeTo("show");
   return false;
